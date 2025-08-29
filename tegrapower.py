@@ -372,7 +372,7 @@ def measure_energy_to_csv(
     rail: str = "VIN_SYS_5V0",
     interval_ms: int = 200,
     log_dir: str = "powerlogs",
-    num_runs: int = 3,
+    num_runs: int = 1,
     guard_samples: int = 2,
     energy_csv_path: str = "energy_results.csv",
     append: bool = True,
