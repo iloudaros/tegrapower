@@ -379,7 +379,7 @@ def measure_energy_to_csv(
     fallback_rails: Optional[List[str]] = None
 ):
     """
-    Decorator to measure energy around a function call and append [Test, Energy] to a CSV.
+    Decorator to measure energy around a function call and append [Test, Energy, Avg_Power_mW] to a CSV.
 
     Usage:
         @measure_energy_to_csv(...)
@@ -393,7 +393,7 @@ def measure_energy_to_csv(
       - Starts tegrastats before the function and stops after.
       - Sleeps for guard_samples * dt before and after to bracket the segment.
       - Parses the fresh log and integrates a chosen rail.
-      - Appends a row [Test, Energy] to energy_csv_path.
+      - Appends a row [Test, Energy, Avg_Power_mW] to energy_csv_path.
       - If the rail is missing, tries fallback_rails; otherwise annotates NO_RAIL/NO_SAMPLES.
     """
     os.makedirs(log_dir, exist_ok=True)
@@ -436,6 +436,7 @@ def measure_energy_to_csv(
 
             # Compute energy and write to CSV
             energy_J = 0.0
+            avg_power_mW = 0.0
             tag_to_write = tag
 
             if also_write_log_file and log_path and os.path.exists(log_path):
@@ -463,6 +464,7 @@ def measure_energy_to_csv(
 
                     if vals:
                         energy_J = float(vals.get("energy_J", 0.0))
+                        avg_power_mW = float(vals.get("avg_power_mW", 0.0))
                         tag_to_write = f"{tag}({chosen_rail})"
                     else:
                         tag_to_write = f"{tag}(NO_RAIL)"
@@ -473,8 +475,8 @@ def measure_energy_to_csv(
             with open(energy_csv_path, "a", newline="") as f:
                 writer = csv.writer(f)
                 if need_header:
-                    writer.writerow(["Test", "Energy"])
-                writer.writerow([tag_to_write, f"{energy_J:.6f}"])
+                    writer.writerow(["Test", "Energy_J", "Avg_Power_mW"])
+                writer.writerow([tag_to_write, f"{energy_J:.6f}", f"{avg_power_mW:.3f}"])
 
             return result
         return wrapper
@@ -487,17 +489,17 @@ def merge_csvs_by_row_order(
     merged_csv_path: str
 ) -> None:
     """
-    Simplest merge: append Energy from energy_results row i to benchmark row i.
+    Simplest merge: append Energy and Avg_Power_mW from energy_results row i to benchmark row i.
 
     Assumes:
       - benchmark_csv_path has header:
           model,I,J,K,BATCH_SIZE,throughput_gops,latency_sec
       - energy_csv_path has header:
-          Test,Energy
+          Test,Energy,Avg_Power_mW
     Writes merged_csv_path with header:
-      model,I,J,K,BATCH_SIZE,throughput_gops,latency_sec,Energy
+      model,I,J,K,BATCH_SIZE,throughput_gops,latency_sec,Energy,Avg_Power_mW
 
-    If the energy file has fewer rows than the benchmark, missing entries are filled with 0.000000.
+    If the energy file has fewer rows than the benchmark, missing entries are filled with 0.
     """
     # Read all benchmark rows (including header)
     with open(benchmark_csv_path, "r", encoding="utf-8", errors="ignore") as fb:
@@ -514,12 +516,12 @@ def merge_csvs_by_row_order(
 
     if not energy_rows:
         # No energy; copy benchmark and add zeros
-        header = bench_rows[0] + ["Energy"]
+        header = bench_rows[0] + ["Energy", "Avg_Power_mW"]
         with open(merged_csv_path, "w", newline="") as fo:
             writer = csv.writer(fo)
             writer.writerow(header)
             for r in bench_rows[1:]:
-                writer.writerow(r + ["0.000000"])
+                writer.writerow(r + ["0.000000", "0.000"])
         return
 
     # Assume both have headers in first row
@@ -529,10 +531,11 @@ def merge_csvs_by_row_order(
     # Find the "Energy" column index in the energy CSV header
     try:
         energy_idx = energy_header.index("Energy")
+        power_idx = energy_header.index("Avg_Power_mW")
     except ValueError:
-        raise ValueError("energy CSV must have a column named 'Energy'")
+        raise ValueError("energy CSV must have columns named 'Energy' and 'Avg_Power_mW'")
 
-    out_header = bench_header + ["Energy"]
+    out_header = bench_header + ["Energy", "Avg_Power_mW"]
     out_rows = [out_header]
 
     # Align by row index (skip headers)
@@ -544,9 +547,11 @@ def merge_csvs_by_row_order(
             erow = energy_data[i]
             # Defensive: if row is too short, default to 0
             energy_val = erow[energy_idx] if len(erow) > energy_idx else "0.000000"
+            power_val = erow[power_idx] if len(erow) > power_idx else "0.000"
         else:
             energy_val = "0.000000"
-        out_rows.append(brow + [energy_val])
+            power_val = "0.000"
+        out_rows.append(brow + [energy_val, power_val])
 
     # Write merged CSV
     with open(merged_csv_path, "w", newline="") as fo:
