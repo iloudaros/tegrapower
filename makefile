@@ -35,4 +35,4 @@ docker:
 		$(CONTAINER)
 
 clean:
-	sudo rm -rf powerlogs energy_results.csv model_benchmarks.csv __pycache__
+	sudo rm -rf powerlogs energy_results.csv model_benchmarks.csv __pycache__ bench_with_energy.csv
