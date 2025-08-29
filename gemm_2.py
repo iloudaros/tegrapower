@@ -10,30 +10,37 @@ from tegrapower import measure_energy_to_csv, merge_csvs_by_row_order
 # ==============================================================================
 BASE_CONFIGS = [
     # --- BERT ---
-    {'model': 'BERT', 'I': 512,  'K': 64,   'J': 512,  'runs': 200},
-    {'model': 'BERT', 'I': 3072, 'K': 3024, 'J': 1024, 'runs': 20},
+    {'model': 'BERT', 'I': 512,  'K': 64,   'J': 512,  'runs': 100},
+    {'model': 'BERT', 'I': 512,  'K': 512,  'J': 64,  'runs': 100},
+    {'model': 'BERT', 'I': 3072, 'K': 3024, 'J': 1024, 'runs': 100},
+    {'model': 'BERT', 'I': 3072, 'K': 3072, 'J': 1024, 'runs': 100},
 
     # --- ViT (Vision Transformer) ---
-    {'model': 'ViT', 'I': 3072, 'K': 3024, 'J': 1024, 'runs': 20},
-    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 3072, 'runs': 20},
-    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 1024, 'runs': 50},
-    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 4096, 'runs': 20},
-    {'model': 'ViT', 'I': 3072, 'K': 4096, 'J': 1024, 'runs': 20},
-    {'model': 'ViT', 'I': 64,   'K': 64,   'J': 64,   'runs': 500},
+    {'model': 'ViT', 'I': 3072, 'K': 3024, 'J': 1024, 'runs': 100},
+    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 3072, 'runs': 100},
+    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 1024, 'runs': 100},
+    {'model': 'ViT', 'I': 3072, 'K': 1024, 'J': 4096, 'runs': 100},
+    {'model': 'ViT', 'I': 3072, 'K': 4096, 'J': 1024, 'runs': 100},
+    {'model': 'ViT', 'I': 64,   'K': 64,   'J': 64,   'runs': 100},
 
     # --- NCF (Neural Collaborative Filtering) ---
-    {'model': 'NCF', 'I': 3072, 'K': 4096, 'J': 2048, 'runs': 10},
-    {'model': 'NCF', 'I': 3072, 'K': 2048, 'J': 1024, 'runs': 20},
-    {'model': 'NCF', 'I': 3072, 'K': 1024, 'J': 512,  'runs': 50},
+    {'model': 'NCF', 'I': 3072, 'K': 4096, 'J': 2048, 'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 2048, 'J': 1024, 'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 1024, 'J': 512,  'runs': 100},
     {'model': 'NCF', 'I': 3072, 'K': 512,  'J': 256,  'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'K': 256,  'J': 128,  'runs': 200},
-    {'model': 'NCF', 'I': 3072, 'K': 128,  'J': 64,   'runs': 200},
-    {'model': 'NCF', 'I': 3072, 'K': 64,   'J': 32,   'runs': 500},
+    {'model': 'NCF', 'I': 3072, 'K': 256,  'J': 128,  'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 128,  'J': 64,   'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 64,   'J': 32,   'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 32,   'J': 16,   'runs': 100},
+    {'model': 'NCF', 'I': 3072, 'K': 32,   'J': 1,   'runs': 100},
 
     # --- MLP ---
-    {'model': 'MLP', 'I': 3072, 'K': 2048, 'J': 4096, 'runs': 10},
-    {'model': 'MLP', 'I': 3072, 'K': 4096, 'J': 4096, 'runs': 10},
-    {'model': 'MLP', 'I': 3072, 'K': 4096, 'J': 1024, 'runs': 20},
+    {'model': 'MLP', 'I': 3072, 'K': 2048, 'J': 4096, 'runs': 100},
+    {'model': 'MLP', 'I': 3072, 'K': 4096, 'J': 4096, 'runs': 100},
+    {'model': 'MLP', 'I': 3072, 'K': 4096, 'J': 1024, 'runs': 100},
+    
+    # --- Misc ---
+    {'model': 'MLP', 'I': 2816, 'K': 3072, 'J': 8192, 'runs': 100},
 ]
 
 
