@@ -42,11 +42,11 @@ Inside the container:
 The example uses the NVIDIA L4T ML container `nvcr.io/nvidia/l4t-ml:r36.2.0-py3` which is compatible with AGX Orin. For other Jetson models, choose a suitable container from the [NVIDIA NGC catalog](https://ngc.nvidia.com/catalog/containers/nvidia:l4t-ml). We provide recommendations below:
 
 
-| Jetson Model      | Recommended Container                  |
-|-------------------|----------------------------------------|
-| Jetson AGX Orin   | nvcr.io/nvidia/l4t-ml:r36.2.0-py3     |
-| Jetson AGX Xavier | nvcr.io/nvidia/l4t-ml:r35.3.1-py3    |
-| Jetson NX Xavier      | nvcr.io/nvidia/l4t-ml:r35.3.1-py3   |
+| Jetson Model      | Recommended Container                         |
+|-------------------|-----------------------------------------------|
+| Jetson AGX Orin   | nvcr.io/nvidia/l4t-ml:r36.2.0-py3             |
+| Jetson AGX Xavier | nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3 |
+| Jetson NX Xavier  | nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3 |
 
 ---
 
