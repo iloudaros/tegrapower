@@ -61,6 +61,7 @@ OUTPUT_CSV_FILE = 'model_benchmarks.csv'
     rail="VIN_SYS_5V0",                 # or "POM_5V_IN" if present
     interval_ms=50,                     # faster sampling
     log_dir="powerlogs",                # per-test tegrastats logs
+    num_runs=3                          # measure energy 3 times and average
     guard_samples=3,                    # ~0,15 s before & after
     energy_csv_path="energy_results.csv",
     append=True,
