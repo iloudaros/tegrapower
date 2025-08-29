@@ -118,8 +118,8 @@ def parse_tegrastats_line(line: str) -> Dict[str, float]:
     """
     rails: Dict[str, float] = {}
     for name, val in RAIL_PAIR_RE.findall(line):
-        if "_" in name or name.startswith(("VDD", "VIN", "POM", "TOTAL")):
-            rails[name] = float(val)
+        # Keep any rail that the regex finds
+        rails[name] = float(val)
     return rails
 
 
