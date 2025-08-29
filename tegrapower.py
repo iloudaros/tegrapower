@@ -530,7 +530,7 @@ def merge_csvs_by_row_order(
 
     # Find the "Energy" column index in the energy CSV header
     try:
-        energy_idx = energy_header.index("Energy")
+        energy_idx = energy_header.index("Energy_J")
         power_idx = energy_header.index("Avg_Power_mW")
     except ValueError:
         raise ValueError("energy CSV must have columns named 'Energy' and 'Avg_Power_mW'")
