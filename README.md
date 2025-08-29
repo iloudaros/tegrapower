@@ -168,6 +168,14 @@ Notes:
 -  `guard_samples` adds padding before/after the measured segment for robust capture.
 -  `fallback_rails` provides alternatives if the primary rail isn’t found in a given log. It is only used when `rail` is a single string.
 
+> [!TIP]
+> If you are trying to estimate total system power, `VIN_SYS_5V0` is usually a good choice. Check your `tegrastats` output to confirm the rail name. You can check this table of common rail names from various Jetson models:
+> | Jetson Model      | Common Input Rail Name |
+> |-------------------|------------------------|
+> | Jetson AGX Orin   | VIN_SYS_5V0            |
+> | Jetson AGX Xavier | lalalaa                |
+> | Jetson NX Xavier  | lalalal                |
+
 ### 2) Provide a test tag when calling your benchmark
 
 Pass `_bench_tag` to name the test in `energy_results.csv` and to name each raw power log. The final tag in the CSV will be annotated with the rail(s) used and the number of runs averaged.
