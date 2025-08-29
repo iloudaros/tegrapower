@@ -372,6 +372,7 @@ def measure_energy_to_csv(
     rail: str = "VIN_SYS_5V0",
     interval_ms: int = 200,
     log_dir: str = "powerlogs",
+    num_runs: int = 1,
     guard_samples: int = 2,
     energy_csv_path: str = "energy_results.csv",
     append: bool = True,
@@ -380,6 +381,17 @@ def measure_energy_to_csv(
 ):
     """
     Decorator to measure energy around a function call and append [Test, Energy, Avg_Power_mW] to a CSV.
+
+    Args:
+        rail (str): The primary power rail to measure (e.g., "VIN_SYS_5V0").
+        interval_ms (int): Sampling interval for tegrastats in milliseconds.
+        log_dir (str): Base directory to store power logs.
+        num_runs (int): Number of times to execute the function and average the results.
+        guard_samples (int): Number of sampling intervals to wait before and after the function call.
+        energy_csv_path (str): Path to the output CSV for energy results.
+        append (bool): If True, append to the CSV; otherwise, create a new one.
+        also_write_log_file (bool): If True, perform logging. If False, just run the function.
+        fallback_rails (Optional[List[str]]): List of alternative rails to try if the primary is not found.
 
     Usage:
         @measure_energy_to_csv(...)
@@ -390,11 +402,14 @@ def measure_energy_to_csv(
         run_benchmark(op_func, runs, _bench_tag="Model_I..._K..._J..._B..._runs...")
 
     Behavior:
-      - Starts tegrastats before the function and stops after.
-      - Sleeps for guard_samples * dt before and after to bracket the segment.
-      - Parses the fresh log and integrates a chosen rail.
-      - Appends a row [Test, Energy, Avg_Power_mW] to energy_csv_path.
-      - If the rail is missing, tries fallback_rails; otherwise annotates NO_RAIL/NO_SAMPLES.
+      - For each of the `num_runs`:
+        - Creates a numbered subfolder in `log_dir` (e.g., `powerlogs/1`, `powerlogs/2`).
+        - Starts tegrastats, logging to a file within the subfolder.
+        - Executes the decorated function.
+        - Stops tegrastats.
+      - After all runs, it calculates the average energy and power over all successful runs.
+      - Appends a single row with the averaged results to `energy_csv_path`.
+      - The 'Test' column in the CSV is annotated to show the number of runs averaged.
     """
     os.makedirs(log_dir, exist_ok=True)
 
@@ -405,78 +420,91 @@ def measure_energy_to_csv(
             tag = kwargs.pop("_bench_tag", "bench")
             dt_hint = estimate_dt_from_interval_ms(interval_ms)
 
-            logger = None
-            log_path = None
-
-            # If not appending, reset the energy CSV
             if not append and os.path.exists(energy_csv_path):
                 os.remove(energy_csv_path)
             need_header = not os.path.exists(energy_csv_path)
 
-            try:
-                if also_write_log_file:
-                    # Unique filename per run (tag + epoch seconds)
-                    log_path = os.path.join(log_dir, f"{tag}_{int(time.time())}.log")
-                    logger = TegrastatsLogger(log_path, interval_ms=interval_ms)
-                    logger.start(append=False)
+            if not also_write_log_file:
+                result = None
+                for _ in range(num_runs):
+                    result = func(*args, **kwargs)
+                with open(energy_csv_path, "a", newline="") as f:
+                    writer = csv.writer(f)
+                    if need_header:
+                        writer.writerow(["Test", "Energy_J", "Avg_Power_mW"])
+                    writer.writerow([tag, "0.000000", "0.000"])
+                return result
 
-                    # Pre-guard to ensure some pre-work samples
+            run_energies: List[float] = []
+            run_powers: List[float] = []
+            last_chosen_rail = rail
+            any_samples_found = False
+            result = None
+
+            for i in range(num_runs):
+                run_log_dir = os.path.join(log_dir, str(i + 1))
+                os.makedirs(run_log_dir, exist_ok=True)
+                log_path = os.path.join(run_log_dir, f"{tag}_{int(time.time())}.log")
+                logger = TegrastatsLogger(log_path, interval_ms=interval_ms)
+
+                try:
+                    logger.start(append=False)
                     if guard_samples > 0:
                         time.sleep(dt_hint * guard_samples)
-
-                # Execute the workload (wrapped function)
-                result = func(*args, **kwargs)
-
-                # Post-guard to capture trailing samples
-                if also_write_log_file and guard_samples > 0:
-                    time.sleep(dt_hint * guard_samples)
-            finally:
-                if logger:
+                    result = func(*args, **kwargs)
+                    if guard_samples > 0:
+                        time.sleep(dt_hint * guard_samples)
+                finally:
                     logger.stop()
 
-            # Compute energy and write to CSV
-            energy_J = 0.0
-            avg_power_mW = 0.0
+                line_count = 0
+                if os.path.exists(log_path):
+                    try:
+                        with open(log_path, "r", encoding="utf-8", errors="ignore") as lf:
+                            line_count = sum(1 for _ in lf)
+                    except Exception:
+                        pass
+                
+                if line_count == 0:
+                    continue
+
+                any_samples_found = True
+                summary = summarize_log(log_path, dt_hint_s=dt_hint, force_fixed_dt=True)
+                chosen_rail = rail
+                vals = summary.get(chosen_rail)
+
+                if not vals and fallback_rails:
+                    for fr in fallback_rails:
+                        if fr in summary:
+                            chosen_rail = fr
+                            vals = summary.get(fr)
+                            break
+                
+                last_chosen_rail = chosen_rail
+                if vals:
+                    run_energies.append(float(vals.get("energy_J", 0.0)))
+                    run_powers.append(float(vals.get("avg_power_mW", 0.0)))
+
+            final_energy_J = 0.0
+            final_avg_power_mW = 0.0
             tag_to_write = tag
 
-            if also_write_log_file and log_path and os.path.exists(log_path):
-                # Ensure the log isn't empty (no lines)
-                try:
-                    with open(log_path, "r", encoding="utf-8", errors="ignore") as lf:
-                        line_count = sum(1 for _ in lf)
-                except Exception:
-                    line_count = 0
+            if run_energies:
+                avg_energy = sum(run_energies) / len(run_energies)
+                avg_power = sum(run_powers) / len(run_powers)
+                final_energy_J = avg_energy
+                final_avg_power_mW = avg_power
+                tag_to_write = f"{tag}({last_chosen_rail}, avg of {len(run_energies)} runs)"
+            elif any_samples_found:
+                tag_to_write = f"{tag}(NO_RAIL)"
+            else:
+                tag_to_write = f"{tag}(NO_SAMPLES)"
 
-                if line_count > 0:
-                    # force_fixed_dt=True so each captured line contributes dt_hint seconds
-                    summary = summarize_log(log_path, dt_hint_s=dt_hint, force_fixed_dt=True)
-
-                    chosen_rail = rail
-                    vals = summary.get(chosen_rail)
-
-                    # Try fallback rails if the primary rail is missing
-                    if not vals and fallback_rails:
-                        for fr in fallback_rails:
-                            if fr in summary:
-                                chosen_rail = fr
-                                vals = summary[fr]
-                                break
-
-                    if vals:
-                        energy_J = float(vals.get("energy_J", 0.0))
-                        avg_power_mW = float(vals.get("avg_power_mW", 0.0))
-                        tag_to_write = f"{tag}({chosen_rail})"
-                    else:
-                        tag_to_write = f"{tag}(NO_RAIL)"
-                else:
-                    tag_to_write = f"{tag}(NO_SAMPLES)"
-
-            # Append one row to the energy CSV
             with open(energy_csv_path, "a", newline="") as f:
                 writer = csv.writer(f)
                 if need_header:
                     writer.writerow(["Test", "Energy_J", "Avg_Power_mW"])
-                writer.writerow([tag_to_write, f"{energy_J:.6f}", f"{avg_power_mW:.3f}"])
+                writer.writerow([tag_to_write, f"{final_energy_J:.6f}", f"{final_avg_power_mW:.3f}"])
 
             return result
         return wrapper
