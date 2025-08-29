@@ -1,4 +1,4 @@
-# Measuring Energy on Jetson (AGX Orin) with tegrapower.py
+# Measuring Energy on Jetson Devices with tegrapower.py
 
 ## Overview
 
