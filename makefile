@@ -26,6 +26,11 @@ jetpack_version:
 	@echo "Remember to check the Linux version mapping at:"
 	@echo "https://docs.nvidia.com/jetson/archives/index.html"
 
+# Force pull the latest version of the repo
+update:
+	git reset --hard
+	git pull
+
 # Launch the NVIDIA container with GPU access,
 # mounting your configurable workspace and the tegrastats binary
 docker:
