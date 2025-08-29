@@ -168,6 +168,6 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 70)
     print(f"Benchmark complete. Results saved in '{OUTPUT_CSV_FILE}'.")
-    print("Energy per test saved in 'energy_results.csv' with columns [Test, Energy].")
+    print("Energy per test saved in 'energy_results.csv' with columns [Test, Energy_J, Avg_power_mW].")
     merge_csvs_by_row_order("model_benchmarks.csv", "energy_results.csv", "bench_with_energy.csv")
 
