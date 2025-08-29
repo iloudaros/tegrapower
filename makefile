@@ -2,7 +2,7 @@
 # Override by:
 #   - environment variable: export WORKSPACE=/path/to/your/workspace
 #   - or at invocation: make docker WORKSPACE=/path/to/your/workspace
-WORKSPACE ?= ~/tegrapower
+WORKSPACE ?= $(shell realpath $(CURDIR))
 
 
 # NVIDIA container image to use
