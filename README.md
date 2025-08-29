@@ -172,7 +172,7 @@ Notes:
 > If you are trying to estimate total system power, `VIN_SYS_5V0` is usually a good choice. Check your `tegrastats` output to confirm the rail name. You can check the table blow for our reccommended rails to use for different Jetson models.
 > | Jetson Model      | Common Input Rail Name                  |
 > |-------------------|-----------------------------------------|
-> | Jetson AGX Orin   | VDD_GPU_SOC + VIN_SYS_5V0 + VIN_SYS_5V0 |
+> | Jetson AGX Orin   | VDD_GPU_SOC + VDD_CPU_CV + VIN_SYS_5V0 |
 > | Jetson AGX Xavier | GPU + CPU + SOC + CV + VDDRQ + SYS5V    |
 > | Jetson NX Xavier  | VDD_IN                                  |
 
