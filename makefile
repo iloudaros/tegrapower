@@ -33,3 +33,6 @@ docker:
 		-v $(WORKSPACE):/workspace \
 		-v /usr/bin/tegrastats:/usr/bin/tegrastats \
 		$(CONTAINER)
+
+clean:
+	sudo rm -rf powerlogs energy_results.csv model_benchmarks.csv __pycache__
