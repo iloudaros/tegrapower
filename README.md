@@ -4,13 +4,13 @@
 
 `tegrapower.py` provides tools to measure power and energy on NVIDIA Jetson devices (e.g., AGX Orin) using `tegrastats`:
 
--  TegrastatsLogger: start/stop `tegrastats` and log to a file
+-  `TegrastatsLogger`: start/stop `tegrastats` and log to a file
 -  Parsers and energy integration utilities
 -  CSV exporters (time-series and summary)
 -  Decorator `measure_energy_to_csv` to wrap a benchmark function:
    - Captures power during execution
-   - Integrates energy for a chosen rail (e.g., VIN_SYS_5V0)
-   - Appends results to a simple CSV: `[Test, Energy]`
+   - Integrates energy for a chosen rail (e.g., `VIN_SYS_5V0`) or a sum of multiple rails (e.g., `["VDD_GPU_SOC", "VDD_CPU_CV"]`)
+   - Appends results to a simple CSV: `[Test, Energy_J, Avg_Power_mW]`
 -  Helper `merge_csvs_by_row_order` to merge benchmark and energy CSVs by row position
 
 This README explains how to use `tegrapower.py` to measure energy for a GEMM benchmark similar to `gemm.py`, and how to use the provided Makefile to simplify the container workflow.
@@ -132,39 +132,53 @@ Once inside the container, your files will be at `/workspace`.
 
 ### 1) Decorate your benchmark function
 
-In `gemm.py`, the `run_benchmark` is decorated with `measure_energy_to_csv`:
+In `gemm.py`, the `run_benchmark` is decorated with `measure_energy_to_csv`. You can specify a single rail or a list of rails to sum their power and energy.
 
 ```python
 from tegrapower import measure_energy_to_csv
 
+# Example 1: Measure total system power from a single input rail
 @measure_energy_to_csv(
-    rail="VIN_SYS_5V0",                 # or "POM_5V_IN" if present in your tegrastats output
-    interval_ms=50,                     # faster sampling for short tests
-    log_dir="powerlogs",                # where per-test tegrastats logs are stored
-    guard_samples=3,                    # pre/post guard samples (~0,15 s each at 50 ms)
+    rail="VIN_SYS_5V0",                 # Primary rail to measure
+    interval_ms=50,                     # Faster sampling for short tests
+    log_dir="powerlogs",                # Where per-test tegrastats logs are stored
+    guard_samples=3,                    # Pre/post guard samples (~0,15 s each at 50 ms)
     energy_csv_path="energy_results.csv",
     append=True,
     also_write_log_file=True,
-    fallback_rails=["POM_5V_IN", "VDD_CPU_CV", "VDD_GPU_SOC"]
+    fallback_rails=["POM_5V_IN"] # Alternative if primary rail isn't found
 )
 def run_benchmark(op_func, runs):
-    # warmup + measured loop
-    ...
+    # ... benchmark logic ...
+
+# Example 2: Sum the power of GPU and CPU rails
+@measure_energy_to_csv(
+    rail=["VDD_GPU_SOC", "VDD_CPU_CV"], # Sum these rails
+    interval_ms=50,
+    # ... other parameters ...
+)
+def run_benchmark(op_func, runs):
+    # ... benchmark logic ...
 ```
 
 Notes:
 
--  Pick `rail` that exists in your tegrastats lines. For AGX Orin this is often `VIN_SYS_5V0`.
+-  The `rail` parameter accepts a single string (e.g., `"VIN_SYS_5V0"`) or a list of strings (`["VDD_GPU_SOC", "VDD_CPU_CV"]`). When a list is provided, their power and energy values are summed for each run.
 -  `interval_ms` of 50–100 ms is recommended for short tests.
 -  `guard_samples` adds padding before/after the measured segment for robust capture.
--  `fallback_rails` provides alternatives if the primary rail isn’t found in a given log.
+-  `fallback_rails` provides alternatives if the primary rail isn’t found in a given log. It is only used when `rail` is a single string.
 
 ### 2) Provide a test tag when calling your benchmark
 
-Pass `_bench_tag` to name the test in `energy_results.csv` and to name each raw power log:
+Pass `_bench_tag` to name the test in `energy_results.csv` and to name each raw power log. The final tag in the CSV will be annotated with the rail(s) used and the number of runs averaged.
 
 ```python
 tag = f"{model}_I{I}_K{K}_J{J}_B{batch_size}_runs{runs}"
+
+# This will produce a CSV row with a test name like:
+# "p3767-0000_I..._runs1(VIN_SYS_5V0, avg of 1 runs)"
+# or, for a multi-rail measurement:
+# "p3767-0000_I..._runs1(VDD_GPU_SOC+VDD_CPU_CV, avg of 1 runs)"
 latency_sec = run_benchmark(op_func, runs, _bench_tag=tag)
 ```
 
@@ -178,14 +192,14 @@ python3 gemm.py
 This produces:
 
 -  `model_benchmarks.csv` — throughput and latency per test
--  `energy_results.csv` — a per-test energy value (in Joules) as rows `[Test, Energy]`
+-  `energy_results.csv` — per-test energy and power as rows `[Test, Energy_J, Avg_Power_mW]`
 -  `powerlogs/` — raw `tegrastats` logs for each test run
 
 ---
 
 ## Merging CSVs by Row Order
 
-To create a single CSV with an appended `Energy` column (row-aligned by order):
+To create a single CSV with appended energy and power columns (row-aligned by order):
 
 ```python
 from tegrapower import merge_csvs_by_row_order
@@ -199,9 +213,9 @@ merge_csvs_by_row_order(
 
 The merged file will have columns:
 
--  `model, I, J, K, BATCH_SIZE, throughput_gops, latency_sec, Energy`
+-  `model, I, J, K, BATCH_SIZE, throughput_gops, latency_sec, Energy, Avg_Power_mW`
 
-If the energy file has fewer rows, missing energies are filled with `0.000000`.
+If the energy file has fewer rows than the benchmark file, missing entries are filled with `0.000000` and `0.000`.
 
 ---
 
@@ -209,14 +223,14 @@ If the energy file has fewer rows, missing energies are filled with `0.000000`.
 
 Ultra-short tests (microseconds) can be hard to capture. Use these tips:
 
--  Decrease sampling interval:
+-  **Decrease sampling interval**:
    - `interval_ms=50` (or 100) for finer sampling.
--  Add guard samples:
+-  **Add guard samples**:
    - `guard_samples=3` (or higher) to bracket the measurement window with pre/post samples.
--  Stretch the measured segment:
+-  **Stretch the measured segment**:
    - In `gemm.py`, `run_benchmark` can ensure a minimum measured time (e.g., 0,5–1,0 s) by internally repeating the operation and dividing by repeat count. This preserves per-iteration latency and supplies more samples for integration.
--  Verify rail presence:
-   - Ensure your chosen `rail` appears in the tegrastats logs (e.g., `VIN_SYS_5V0 4132mW/…`).
+-  **Verify rail presence**:
+   - Ensure your chosen `rail`(s) appear in the tegrastats logs (e.g., `VIN_SYS_5V0 4132mW/…`).
 
 ---
 
@@ -238,8 +252,13 @@ logger.stop()
 dt = estimate_dt_from_interval_ms(100)
 summary = summarize_log("power.log", dt_hint_s=dt, force_fixed_dt=True)
 
-# Example: energy in from input rail
+# Example: energy in Joules from an input rail
 print(summary["VIN_SYS_5V0"]["energy_J"])
+
+# Example: manually sum energy from multiple rails
+gpu_J = summary.get("VDD_GPU_SOC", {}).get("energy_J", 0.0)
+cpu_J = summary.get("VDD_CPU_CV", {}).get("energy_J", 0.0)
+print(f"Combined GPU+CPU Energy: {gpu_J + cpu_J:.6f} J")
 ```
 
 ---
@@ -270,12 +289,13 @@ python3 -c "from tegrapower import merge_csvs_by_row_order as m; m('model_benchm
 
 ## FAQ
 
--  Why do I sometimes see `0.000000` J?
-   - Not enough samples captured inside the measured window. Try:
+-  **Why do I sometimes see `0.000000` J?**
+   - Not enough samples were captured inside the measured window, or the specified rail(s) were not found in the log. Try:
      - Smaller `interval_ms` (50–100 ms)
      - Larger `guard_samples` (3–5)
      - Stretch the measured segment to ≥ 0,5–1,0 s
-     - Confirm the rail (e.g., `VIN_SYS_5V0`) exists in your logs
+     - Confirm the rail name (e.g., `VIN_SYS_5V0`) exists in your `tegrastats` output.
 
--  Do I need timestamps in tegrastats?
-   - No. The decorator uses a fixed `dt` per line (`force_fixed_dt=True`) to avoid timestamp ambiguity.
+-  **Do I need timestamps in tegrastats?**
+   - No. The decorator uses a fixed `dt` per line (`force_fixed_dt=True`) by default to avoid timestamp ambiguity and ensure each sample contributes equally to the energy integral.
+

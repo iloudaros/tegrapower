@@ -5,7 +5,7 @@ import signal
 import subprocess
 import csv
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Callable, Any
+from typing import Dict, List, Optional, Tuple, Callable, Any, Union
 from functools import wraps
 import time
 
@@ -369,7 +369,7 @@ def export_summary_csv(
 # ---------- Decorator that logs [Test, Energy] to its own CSV ----------
 
 def measure_energy_to_csv(
-    rail: str = "VIN_SYS_5V0",
+    rail: Union[str, List[str]] = "VIN_SYS_5V0",
     interval_ms: int = 200,
     log_dir: str = "powerlogs",
     num_runs: int = 1,
@@ -383,7 +383,8 @@ def measure_energy_to_csv(
     Decorator to measure energy around a function call and append [Test, Energy, Avg_Power_mW] to a CSV.
 
     Args:
-        rail (str): The primary power rail to measure (e.g., "VIN_SYS_5V0").
+        rail (Union[str, List[str]]): The primary power rail(s) to measure. If a string, it's the main rail.
+                                       If a list of strings, the energy/power of those rails are summed up.
         interval_ms (int): Sampling interval for tegrastats in milliseconds.
         log_dir (str): Base directory to store power logs.
         num_runs (int): Number of times to execute the function and average the results.
@@ -391,10 +392,10 @@ def measure_energy_to_csv(
         energy_csv_path (str): Path to the output CSV for energy results.
         append (bool): If True, append to the CSV; otherwise, create a new one.
         also_write_log_file (bool): If True, perform logging. If False, just run the function.
-        fallback_rails (Optional[List[str]]): List of alternative rails to try if the primary is not found.
+        fallback_rails (Optional[List[str]]): List of alternative rails to try if the primary is not found (only used if `rail` is a string).
 
     Usage:
-        @measure_energy_to_csv(...)
+        @measure_energy_to_csv(rail=["VDD_GPU_SOC", "VDD_CPU_CV"])
         def run_benchmark(op_func, runs):
             ...
 
@@ -408,8 +409,9 @@ def measure_energy_to_csv(
         - Executes the decorated function.
         - Stops tegrastats.
       - After all runs, it calculates the average energy and power over all successful runs.
+      - If `rail` was a list, the values are summed for each run before averaging.
       - Appends a single row with the averaged results to `energy_csv_path`.
-      - The 'Test' column in the CSV is annotated to show the number of runs averaged.
+      - The 'Test' column in the CSV is annotated to show the number of runs averaged and the rail(s) used.
     """
     os.makedirs(log_dir, exist_ok=True)
 
@@ -437,7 +439,7 @@ def measure_energy_to_csv(
 
             run_energies: List[float] = []
             run_powers: List[float] = []
-            last_chosen_rail = rail
+            rail_display_name = ""
             any_samples_found = False
             result = None
 
@@ -470,20 +472,41 @@ def measure_energy_to_csv(
 
                 any_samples_found = True
                 summary = summarize_log(log_path, dt_hint_s=dt_hint, force_fixed_dt=True)
-                chosen_rail = rail
-                vals = summary.get(chosen_rail)
-
-                if not vals and fallback_rails:
-                    for fr in fallback_rails:
-                        if fr in summary:
-                            chosen_rail = fr
-                            vals = summary.get(fr)
-                            break
                 
-                last_chosen_rail = chosen_rail
-                if vals:
-                    run_energies.append(float(vals.get("energy_J", 0.0)))
-                    run_powers.append(float(vals.get("avg_power_mW", 0.0)))
+                run_energy_J = 0.0
+                run_avg_power_mW = 0.0
+                rails_used_this_run = []
+                
+                if isinstance(rail, list):
+                    for r_name in rail:
+                        if r_name in summary:
+                            vals = summary[r_name]
+                            run_energy_J += float(vals.get("energy_J", 0.0))
+                            run_avg_power_mW += float(vals.get("avg_power_mW", 0.0))
+                            rails_used_this_run.append(r_name)
+                    if rails_used_this_run:
+                        rail_display_name = "+".join(rails_used_this_run)
+                elif isinstance(rail, str):
+                    chosen_rail_name = rail
+                    vals = summary.get(chosen_rail_name)
+
+                    if not vals and fallback_rails:
+                        for fr in fallback_rails:
+                            if fr in summary:
+                                chosen_rail_name = fr
+                                vals = summary.get(fr)
+                                break
+                    
+                    if vals:
+                        run_energy_J = float(vals.get("energy_J", 0.0))
+                        run_avg_power_mW = float(vals.get("avg_power_mW", 0.0))
+                        rails_used_this_run.append(chosen_rail_name)
+                        rail_display_name = chosen_rail_name
+                
+                if rails_used_this_run:
+                    run_energies.append(run_energy_J)
+                    run_powers.append(run_avg_power_mW)
+
 
             final_energy_J = 0.0
             final_avg_power_mW = 0.0
@@ -494,7 +517,7 @@ def measure_energy_to_csv(
                 avg_power = sum(run_powers) / len(run_powers)
                 final_energy_J = avg_energy
                 final_avg_power_mW = avg_power
-                tag_to_write = f"{tag}({last_chosen_rail}, avg of {len(run_energies)} runs)"
+                tag_to_write = f"{tag}({rail_display_name}, avg of {len(run_energies)} runs)"
             elif any_samples_found:
                 tag_to_write = f"{tag}(NO_RAIL)"
             else:
