@@ -169,12 +169,12 @@ Notes:
 -  `fallback_rails` provides alternatives if the primary rail isn’t found in a given log. It is only used when `rail` is a single string.
 
 > [!TIP]
-> If you are trying to estimate total system power, `VIN_SYS_5V0` is usually a good choice. Check your `tegrastats` output to confirm the rail name. You can check this table of common rail names from various Jetson models:
-> | Jetson Model      | Common Input Rail Name |
-> |-------------------|------------------------|
-> | Jetson AGX Orin   | VIN_SYS_5V0            |
-> | Jetson AGX Xavier | lalalaa                |
-> | Jetson NX Xavier  | lalalal                |
+> If you are trying to estimate total system power, `VIN_SYS_5V0` is usually a good choice. Check your `tegrastats` output to confirm the rail name. You can check the table blow for our reccommended rails to use for different Jetson models.
+> | Jetson Model      | Common Input Rail Name                  |
+> |-------------------|-----------------------------------------|
+> | Jetson AGX Orin   | VDD_GPU_SOC + VIN_SYS_5V0 + VIN_SYS_5V0 |
+> | Jetson AGX Xavier | GPU + CPU + SOC + CV + VDDRQ + SYS5V    |
+> | Jetson NX Xavier  | VDD_IN                                  |
 
 ### 2) Provide a test tag when calling your benchmark
 
