@@ -83,7 +83,7 @@ First, prepare your environment and configuration.
    >| Jetson AGX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
    >| Jetson NX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
     
-    You can also configure the power `rail` to measure, the sampling `interval_ms`, and the number of `num_runs` for averaging. See the `.env.template` file for all options.
+   You can also configure the power `rail` to measure, the sampling `interval_ms`, and the number of `num_runs` for averaging. See the `.env.template` file for all options.
 
 ### Step 2: Run Benchmark (Inside Docker)
 
