@@ -73,7 +73,7 @@ First, prepare your environment and configuration.
     ```
 
 3.  **Edit `.env`:**
-    Open `.env` and customize the variables. The most important one is `CONTAINER`, which should match your Jetson device. Use the `make model` and `make jetpack_version` commands to help identify your system.
+   Open `.env` and customize the variables. The most important one is `CONTAINER`, which should match your Jetson device. Use the `make model` and `make jetpack_version` commands to help identify your system.
 
    > [!NOTE]
    > Recommended container images for common Jetson models:
