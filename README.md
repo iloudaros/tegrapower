@@ -75,13 +75,13 @@ First, prepare your environment and configuration.
 3.  **Edit `.env`:**
     Open `.env` and customize the variables. The most important one is `CONTAINER`, which should match your Jetson device. Use the `make model` and `make jetpack_version` commands to help identify your system.
 
-    > [!NOTE]
-    > Recommended container images for common Jetson models:
-    >| Jetson Model | Recommended Container |
-    >| :--- | :--- |
-    >| Jetson AGX Orin | `nvcr.io/nvidia/l4t-ml:r36.2.0-py3` |
-    >| Jetson AGX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
-    >| Jetson NX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
+> [!NOTE]
+> Recommended container images for common Jetson models:
+>| Jetson Model | Recommended Container |
+>| :--- | :--- |
+>| Jetson AGX Orin | `nvcr.io/nvidia/l4t-ml:r36.2.0-py3` |
+>| Jetson AGX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
+>| Jetson NX Xavier | `nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3` |
     
     You can also configure the power `rail` to measure, the sampling `interval_ms`, and the number of `num_runs` for averaging. See the `.env.template` file for all options.
 
