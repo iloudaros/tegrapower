@@ -24,7 +24,7 @@ This repository is designed to streamline the process of running benchmarks, mea
 ## Repository Structure
 
 ```
-iloudaros-tegrapower/
+tegrapower/
 ├── README.md                 # This file
 ├── tegrapower.py             # Core library with logger, decorator, and parsers
 ├── gemm.py                   # Example GEMM/BMM benchmark script
@@ -177,7 +177,8 @@ my_benchmark_function(my_args, _bench_tag="My_Test_1")
 *   `num_runs`: The decorator will execute the decorated function this many times and average the energy results into a single output row.
 *   `interval_ms`: The sampling rate for `tegrastats`. 50-100ms is good for short tests.
 
-> **Note on Rails:** To find the correct rail names for your device, run `tegrastats` in your terminal and inspect the output. We recommend the following as starting points:
+> [!TIP]
+>**Note on Rails:** To find the correct rail names for your device, run `tegrastats` in your terminal and inspect the output. We recommend the following as starting points:
 >
 > | Jetson Model | Common Rail Names |
 > | :--- | :--- |
