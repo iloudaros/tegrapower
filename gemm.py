@@ -8,40 +8,30 @@ from tegrapower import measure_energy_to_csv, merge_csvs_by_row_order
 #  1. Define the base matrix shapes (I, J, K) from model architectures
 #     - A (I, K) matrix is multiplied by a (K, J) matrix.
 # ==============================================================================
+
 BASE_CONFIGS = [
-    # --- BERT ---
-    {'model': 'BERT', 'I': 512,  'J': 64,   'K': 512,  'runs': 100},
-    {'model': 'BERT', 'I': 512,  'J': 512,  'K': 64,  'runs': 100},
-    {'model': 'BERT', 'I': 3072, 'J': 3024, 'K': 1024, 'runs': 100},
-    {'model': 'BERT', 'I': 3072, 'J': 3072, 'K': 1024, 'runs': 100},
-
-    # --- ViT (Vision Transformer) ---
-    {'model': 'ViT', 'I': 3072, 'J': 3024, 'K': 1024, 'runs': 100},
-    {'model': 'ViT', 'I': 3072, 'J': 1024, 'K': 3072, 'runs': 100},
-    {'model': 'ViT', 'I': 3072, 'J': 1024, 'K': 1024, 'runs': 100},
-    {'model': 'ViT', 'I': 3072, 'J': 1024, 'K': 4096, 'runs': 100},
-    {'model': 'ViT', 'I': 3072, 'J': 4096, 'K': 1024, 'runs': 100},
-    {'model': 'ViT', 'I': 64,   'J': 64,   'K': 64,   'runs': 100},
-
-    # --- NCF (Neural Collaborative Filtering) ---
-    {'model': 'NCF', 'I': 3072, 'J': 4096, 'K': 2048, 'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 2048, 'K': 1024, 'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 1024, 'K': 512,  'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 512,  'K': 256,  'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 256,  'K': 128,  'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 128,  'K': 64,   'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 64,   'K': 32,   'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 32,   'K': 16,   'runs': 100},
-    {'model': 'NCF', 'I': 3072, 'J': 32,   'K': 1,   'runs': 100},
-
-    # --- MLP ---
-    {'model': 'MLP', 'I': 3072, 'J': 2048, 'K': 4096, 'runs': 100},
-    {'model': 'MLP', 'I': 3072, 'J': 4096, 'K': 4096, 'runs': 100},
-    {'model': 'MLP', 'I': 3072, 'J': 4096, 'K': 1024, 'runs': 100},
-    
-    # --- Misc ---
-    {'model': 'MLP', 'I': 2816, 'J': 3072, 'K': 8192, 'runs': 100},
+    #
+    {'model': 'MISC', 'I': 512,  'J': 896,   'K': 512,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 128,   'K': 896,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 4864,  'K': 896,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 896,  'K': 4896,  'runs': 100},
+    #
+    {'model': 'MISC', 'I': 512,  'J': 2048,  'K': 2048,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 512,   'K': 2048,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 8192,  'K': 2048,  'runs': 100},
+    {'model': 'MISC', 'I': 512,  'J': 2048,  'K': 8192,  'runs': 100},
+    #
+    {'model': 'MISC', 'I': 224,  'J': 768,  'K': 768, 'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 224,  'K': 64,  'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 3072, 'K': 768, 'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 768,  'K': 3072,'runs': 100},
+    #
+    {'model': 'MISC', 'I': 224,  'J': 96,  'K': 96,  'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 64,  'K': 224,  'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 384, 'K': 96,  'runs': 100},
+    {'model': 'MISC', 'I': 224,  'J': 96,  'K': 384,  'runs': 100},
 ]
+
 
 
 # ==============================================================================
