@@ -1,8 +1,12 @@
 import torch
+import os
 import time
 import sys
 import csv
-from tegrapower import measure_energy_to_csv, merge_csvs_by_row_order
+from tegrapower import measure_energy_to_csv, merge_csvs_by_row_order, load_dot_env, extract_env_var
+
+# Load environment variables from .env file if present
+load_dot_env()
 
 # ==============================================================================
 #  1. Define the base matrix shapes (I, J, K) from model architectures
@@ -48,16 +52,16 @@ OUTPUT_CSV_FILE = 'model_benchmarks.csv'
 
 
 @measure_energy_to_csv(
-    rail="VIN_SYS_5V0",                 # or "POM_5V_IN" if present
-    interval_ms=50,                     # faster sampling
-    log_dir="powerlogs",                # per-test tegrastats logs
-    num_runs=5,                         # measure energy [num_runs] times and average
-    guard_samples=3,                    # ~0,15 s before & after
-    energy_csv_path="energy_results.csv",
-    append=True,
-    also_write_log_file=True,
-    fallback_rails=["POM_5V_IN", "VDD_CPU_CV", "VDD_GPU_SOC"]
-)
+    rail=extract_env_var("rail", list, default="VIN_SYS_5V0"),            
+    interval_ms=extract_env_var("interval_ms", int, default=50),
+    log_dir=extract_env_var("log_dir", str, default="powerlogs"),              
+    num_runs=extract_env_var("num_runs", int, default=5),                       
+    guard_samples=extract_env_var("guard_samples", int, default=3),                  
+    energy_csv_path=extract_env_var("energy_csv_path", str, default="energy_results.csv"),
+    append=extract_env_var("append", bool, default=True),
+    also_write_log_file=extract_env_var("also_write_log_file", bool, default=True),
+    fallback_rails=extract_env_var("fallback_rails", list, default=["POM_5V_IN", "VDD_CPU_CV", "VDD_GPU_SOC"]),
+)    
 def run_benchmark(op_func, runs):
     """
     Benchmarks an operation and returns average latency in seconds.

@@ -1,3 +1,5 @@
+include .env
+
 # Configurable workspace path (host side)
 # Override by:
 #   - environment variable: export WORKSPACE=/path/to/your/workspace
@@ -9,6 +11,7 @@ WORKSPACE ?= $(shell realpath $(CURDIR))
 # Override by:
 #   - environment variable: export CONTAINER=your_preferred_image
 #   - or at invocation: make docker CONTAINER=your_preferred_image
+#   - setting the variable in the .env file
 CONTAINER ?= nvcr.io/nvidia/l4t-ml:r36.2.0-py3
 
 # Configurable paths for the combine script
@@ -26,6 +29,7 @@ model_val := $(shell tr -d '\0' < /proc/device-tree/model)
 
 # Print detected Jetson model
 model:
+	@echo ${CONTAINER}
 	@echo $(model_val)
 
 # Show JetPack package information and L4T release details

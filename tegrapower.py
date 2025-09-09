@@ -710,3 +710,74 @@ if __name__ == "__main__":
     else:
         parser.print_help()
 
+
+
+# # ---------- .env File Loader ----------
+def load_dot_env(dotenv_path=".env"):
+    """
+    Manually loads environment variables from a .env file.
+    """
+    if not os.path.exists(dotenv_path):
+        print(f"Warning: '{dotenv_path}' file not found. Skipping.")
+        return False # Indicate that the file was not found
+
+    try:
+        with open(dotenv_path) as f:
+            for line in f:
+                # Ignore comments and empty lines
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+
+                # Use a regular expression to split by the first '='
+                # This handles cases where the value might contain '='
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+
+                    # Remove surrounding quotes (single or double) from the value
+                    if (value.startswith('"') and value.endswith('"')) or \
+                       (value.startswith("'") and value.endswith("'")):
+                        value = value[1:-1]
+
+                    # Set the environment variable for the current process
+                    os.environ[key] = value
+        return True # Indicate that the file was successfully loaded
+    except IOError as e:
+        print(f"Error reading '{dotenv_path}': {e}")
+
+def extract_env_var(name, type, default=None) -> Any:
+    """
+    Retrieves and converts an environment variable to the specified type. If the variable is not found, returns the default value if provided, otherwise raises an error.
+    """
+    value = os.getenv(name)
+
+    if value is None and default is not None:
+        return default
+    if value is None:
+        raise ValueError(f"Environment variable '{name}' not found and default not set.")
+    
+    processed_value: Any
+
+    try:
+        if type == int:
+            processed_value = int(value)
+        elif type == bool:
+            # Handles 'True', 'true', '1' as True, everything else as False
+            processed_value = value.lower() in ('true', '1')
+        elif type == list:
+            # Handles comma-separated strings, strips whitespace from each item
+            processed_value = [item.strip() for item in value.split(',')]
+        elif type == str:
+            # Special handling for 'rail' which has a trailing comma
+            if name == 'rail':
+                processed_value = value.strip(',')
+            else:
+                processed_value = value
+        else:
+            processed_value = value
+
+        return processed_value
+    except ValueError as e:
+        raise ValueError(f"Error converting environment variable '{name}' to {type}: {e}")
