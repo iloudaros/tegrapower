@@ -29,7 +29,6 @@ model_val := $(shell tr -d '\0' < /proc/device-tree/model)
 
 # Print detected Jetson model
 model:
-	@echo ${CONTAINER}
 	@echo $(model_val)
 
 # Show JetPack package information and L4T release details
