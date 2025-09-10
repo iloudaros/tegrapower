@@ -196,7 +196,7 @@ def parse_log(filepath: str) -> Tuple[List[float], List[Dict[str, float]]]:
 
     # Convert absolute times to relative seconds, if timestamps per raw line exist
     times_s: List[float] = []
-    if len(times_abs) == len(raw) and all(t is not None for t in times_abs):
+    if len(times_abs) == len(raw_lines) and all(t is not None for t in times_abs):
         t0 = times_abs[0]  # type: ignore
         times_s = [float(t - t0) for t in times_abs]  # type: ignore
 
