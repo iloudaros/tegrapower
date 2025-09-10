@@ -1,7 +1,3 @@
-Of course. Based on the new files and changes in your repository, I have updated the `README.md` to reflect the new workflow, features, and file structure.
-
-Here is the updated `README.md`:
-
 # Tegrapower: A Python Toolkit for Energy Measurement on NVIDIA Jetson
 
 ## Overview
