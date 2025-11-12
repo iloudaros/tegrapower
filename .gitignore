@@ -180,3 +180,5 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 test.py
+
+model_benchmarks*.csv
