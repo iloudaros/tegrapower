@@ -50,6 +50,8 @@ docker:
 	docker run -it --rm --gpus all --runtime nvidia --network host \
 		-v $(WORKSPACE):/workspace \
 		-v /usr/bin/tegrastats:/usr/bin/tegrastats \
+		-v /usr/sbin/nvpmodel:/usr/sbin/nvpmodel \
+		-v /etc/nvpmodel.conf:/etc/nvpmodel.conf \
 		$(CONTAINER)
 
 # New target to combine results from all devices
