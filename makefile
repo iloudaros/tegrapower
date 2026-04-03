@@ -43,11 +43,11 @@ jetpack_version:
 update:
 	git reset --hard
 	git pull
-
+	
 # Launch the NVIDIA container with GPU access,
-# mounting your configurable workspace and the tegrastats binary
+# mounting your configurable workspace, tegrastats, nvpmodel, and allowing sysfs modification
 docker:
-	docker run -it --rm --gpus all --runtime nvidia --network host \
+	docker run -it --rm --gpus all --runtime nvidia --network host --privileged \
 		-v $(WORKSPACE):/workspace \
 		-v /usr/bin/tegrastats:/usr/bin/tegrastats \
 		-v /usr/sbin/nvpmodel:/usr/sbin/nvpmodel \
