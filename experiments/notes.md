@@ -6,8 +6,11 @@ You can find more information about Clock Frequency and Power Modes in the [NVID
 
 ## Running the experiments
 We provide two primary experiment scripts:
-	1.	`⁠jetson_nvpmodel.py`: Sweeps across NVIDIA Jetson power modes (⁠nvpmodel).	
-    2.	`⁠jetson_freq.py`: Sweeps across specific GPU clock frequencies via ⁠sysfs.
+
+1.	`⁠jetson_nvpmodel.py`: Sweeps across NVIDIA Jetson power modes (⁠nvpmodel).	
+
+2.	`⁠jetson_freq.py`: Sweeps across specific GPU clock frequencies via ⁠sysfs.
+    
 Both scripts automatically discover the capabilities of your specific Jetson board, execute the benchmark, clean up intermediate artifacts to prevent data corruption, and output a unique CSV file for every hardware configuration tested.
 
 ### Prerequisites & Docker Setup
