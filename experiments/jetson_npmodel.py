@@ -60,7 +60,7 @@ def run_experiment():
         modify_power_mode(mode)
         
         # Double check if the mode was successfully applied
-        exit_code = os.system(f"nvpmodel -m {mode} > /dev/null 2>&1")
+        exit_code = os.system(f"sudo nvpmodel -m {mode} > /dev/null 2>&1")
         if exit_code != 0:
             print(f"Skipping mode {mode} as it failed to set. Are you running with sudo?")
             continue
