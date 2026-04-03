@@ -1,11 +1,8 @@
-# In this experiment, we will test the performance of our Jetson Board 
-# in different power modes while running a computationally intensive task. 
-# We will use a gemm file to measure performance and energy consumption in each mode.
-
 import os
 import sys
 import subprocess
 import shutil
+import argparse
 
 # Ensure we can import from the parent directory
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -36,22 +33,36 @@ def get_available_modes():
     # Return a sorted list of unique mode IDs
     return sorted(list(set(modes)))
 
-def run_experiment():
+def run_experiment(requested_modes=None):
     print("=" * 70)
     print("Starting Power Mode Sweep Experiment")
     print("=" * 70)
     
-    modes = get_available_modes()
-    if not modes:
+    available_modes = get_available_modes()
+    if not available_modes:
         print("No power modes found. Ensure you are running on a Jetson device.")
         return
 
-    print(f"Discovered available power modes: {modes}")
+    # Determine which modes to actually test
+    if requested_modes is not None:
+        modes_to_test = [m for m in requested_modes if m in available_modes]
+        invalid_modes = [m for m in requested_modes if m not in available_modes]
+        
+        if invalid_modes:
+            print(f"⚠️ Warning: The following requested modes are NOT available on this device and will be skipped: {invalid_modes}")
+    else:
+        modes_to_test = available_modes
+
+    if not modes_to_test:
+        print("No valid power modes to test. Exiting.")
+        return
+
+    print(f"Modes scheduled for testing: {modes_to_test}")
 
     # The gemm.py script is located in the parent directory
     gemm_script = os.path.join(parent_dir, "gemm.py")
 
-    for mode in modes:
+    for mode in modes_to_test:
         print(f"\n{'=' * 50}")
         print(f"Testing Power Mode: {mode}")
         print(f"{'=' * 50}")
@@ -60,14 +71,12 @@ def run_experiment():
         modify_power_mode(mode)
         
         # Double check if the mode was successfully applied
-        exit_code = os.system(f"sudo nvpmodel -m {mode} > /dev/null 2>&1")
+        exit_code = os.system(f"nvpmodel -m {mode} > /dev/null 2>&1")
         if exit_code != 0:
             print(f"Skipping mode {mode} as it failed to set. Are you running with sudo?")
             continue
 
         # 2. Clean up previous artifacts to ensure `gemm.py` merges correctly.
-        # Since `energy_results.csv` appends by default, we MUST delete it between
-        # runs so that `merge_csvs_by_row_order` maps the rows perfectly.
         for temp_file in ["model_benchmarks.csv", "energy_results.csv", "bench_with_energy.csv"]:
             temp_path = os.path.join(parent_dir, temp_file)
             if os.path.exists(temp_path):
@@ -76,7 +85,6 @@ def run_experiment():
         print(f"\nRunning benchmark for mode {mode}...")
         
         # 3. Run gemm.py
-        # It natively handles the @measure_energy_to_csv decorator
         result = subprocess.run(["python3", gemm_script], cwd=parent_dir)
         
         if result.returncode != 0:
@@ -96,10 +104,20 @@ def run_experiment():
     print("\nExperiment complete! Check the parent directory for your CSV files.")
 
 if __name__ == "__main__":
+    # Setup argparse for command line arguments
+    parser = argparse.ArgumentParser(description="Run benchmark across different NVIDIA Jetson power modes.")
+    parser.add_argument(
+        '--modes', 
+        type=int, 
+        nargs='+', 
+        help="Specific power mode IDs to test (e.g., --modes 0 2 3). If omitted, tests all available modes."
+    )
+    args = parser.parse_args()
+
     # Nvpmodel requires root privileges to scale clocks and toggle cores
     if os.geteuid() != 0:
-        print("ERROR: Please run this script with sudo to allow nvpmodel to change power modes.")
-        print("Usage: sudo python3 example_experiment/jetson_npmode.py")
+        print("ERROR: Please run this script with root privileges to allow nvpmodel to change power modes.")
+        print("Usage: sudo python3 example_experiment/jetson_npmode.py [--modes 0 1 2]")
         sys.exit(1)
         
-    run_experiment()
+    run_experiment(requested_modes=args.modes)
