@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import shutil
+import argparse
 
 # Ensure we can import from the parent directory
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -38,27 +39,42 @@ def get_available_gpu_freqs():
         print(f"Error: Could not find GPU frequency files at {path}.")
         return []
 
-def run_frequency_experiment():
+def run_frequency_experiment(requested_freqs=None, min_freq=None, max_freq=None):
     print("=" * 70)
     print("Starting GPU Frequency Sweep Experiment")
     print("=" * 70)
     
-    # Optional: You might want to ensure the board is in a high-power mode 
-    # (like MAXN) before sweeping frequencies so power-capping doesn't interfere.
-    # from scripts.jetson_tools import modify_power_mode
-    # modify_power_mode(0)  
-
-    frequencies = get_available_gpu_freqs()
-    if not frequencies:
+    available_freqs = get_available_gpu_freqs()
+    if not available_freqs:
         print("No GPU frequencies found. Ensure you are running on a supported Jetson device.")
         return
 
-    print(f"Discovered {len(frequencies)} available GPU frequencies (Hz):")
-    print(frequencies)
+    # Determine which frequencies to test based on arguments
+    freqs_to_test = available_freqs.copy()
+
+    if requested_freqs:
+        freqs_to_test = [f for f in requested_freqs if f in available_freqs]
+        invalid_freqs = [f for f in requested_freqs if f not in available_freqs]
+        if invalid_freqs:
+            print(f"⚠️ Warning: The following requested frequencies are not supported and will be skipped: {invalid_freqs}")
+            print(f"Supported options are: {available_freqs}")
+    else:
+        # Apply range filters if provided
+        if min_freq is not None:
+            freqs_to_test = [f for f in freqs_to_test if f >= min_freq]
+        if max_freq is not None:
+            freqs_to_test = [f for f in freqs_to_test if f <= max_freq]
+
+    if not freqs_to_test:
+        print("No valid GPU frequencies to test based on your filters. Exiting.")
+        return
+
+    print(f"Testing {len(freqs_to_test)} GPU frequencies (Hz):")
+    print(freqs_to_test)
 
     gemm_script = os.path.join(parent_dir, "gemm.py")
 
-    for freq in frequencies:
+    for freq in freqs_to_test:
         print(f"\n{'=' * 50}")
         # Convert Hz to MHz for easier reading in the console
         print(f"Testing GPU Frequency: {freq} Hz ({freq / 1_000_000:.2f} MHz)")
@@ -95,10 +111,33 @@ def run_frequency_experiment():
     print("\nExperiment complete! Check the parent directory for your CSV files.")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run benchmark across different NVIDIA Jetson GPU frequencies.")
+    parser.add_argument(
+        '--freqs', 
+        type=int, 
+        nargs='+', 
+        help="Specific GPU frequencies to test in Hz (e.g., --freqs 114750000 318750000)."
+    )
+    parser.add_argument(
+        '--min-freq', 
+        type=int, 
+        help="The minimum GPU frequency to test in Hz."
+    )
+    parser.add_argument(
+        '--max-freq', 
+        type=int, 
+        help="The maximum GPU frequency to test in Hz."
+    )
+    args = parser.parse_args()
+
     # Writing to sysfs max_freq/min_freq requires root privileges
     if os.geteuid() != 0:
         print("ERROR: Please run this script with sudo to allow modifying GPU frequencies.")
-        print("Usage: sudo python3 example_experiment/jetson_freq.py")
+        print("Usage: sudo python3 example_experiment/jetson_freq.py [options]")
         sys.exit(1)
         
-    run_frequency_experiment()
+    run_frequency_experiment(
+        requested_freqs=args.freqs, 
+        min_freq=args.min_freq, 
+        max_freq=args.max_freq
+    )
