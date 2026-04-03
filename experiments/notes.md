@@ -6,7 +6,7 @@ You can find more information about Clock Frequency and Power Modes in the [NVID
 
 ## Running the experiments
 We provide two primary experiment scripts:
-	1.	`⁠jetson_npmodel.py`: Sweeps across NVIDIA Jetson power modes (⁠nvpmodel).	
+	1.	`⁠jetson_nvpmodel.py`: Sweeps across NVIDIA Jetson power modes (⁠nvpmodel).	
     2.	`⁠jetson_freq.py`: Sweeps across specific GPU clock frequencies via ⁠sysfs.
 Both scripts automatically discover the capabilities of your specific Jetson board, execute the benchmark, clean up intermediate artifacts to prevent data corruption, and output a unique CSV file for every hardware configuration tested.
 
@@ -23,7 +23,7 @@ Because these experiments manipulate low-level hardware states (CPU cores, clock
 
 
 
-### Experiment 1: Power Modes (`jetson_npmodel.py`)
+### Experiment 1: Power Modes (`jetson_nvpmodel.py`)
 
 This script tests your workload across different predefined NVIDIA power profiles. It reads `/etc/nvpmodel.conf` to discover valid modes for your device, applies them sequentially, and benchmarks each one.
 
@@ -32,7 +32,7 @@ This script tests your workload across different predefined NVIDIA power profile
 Run the script from the root of the repository:
 
 ```bash
-sudo python3 experiments/jetson_npmodel.py [OPTIONS]
+sudo python3 experiments/jetson_nvpmodel.py [OPTIONS]
 ```
 
 #### Command-Line Arguments
@@ -43,11 +43,11 @@ sudo python3 experiments/jetson_npmodel.py [OPTIONS]
 
 *   **Test all available power modes:**
     ```bash
-    sudo python3 experiments/jetson_npmodel.py
+    sudo python3 experiments/jetson_nvpmodel.py
     ```
 *   **Test specific modes (e.g., Mode 0, 2, and 4):**
     ```bash
-    sudo python3 experiments/jetson_npmodel.py --modes 0 2 4
+    sudo python3 experiments/jetson_nvpmodel.py --modes 0 2 4
     ```
 
 #### Outputs
