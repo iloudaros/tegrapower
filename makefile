@@ -54,12 +54,33 @@ docker:
 		-v /etc/nvpmodel.conf:/etc/nvpmodel.conf \
 		$(CONTAINER)
 
-# New target to combine results from all devices
+# Display available power modes and fan modes for the Jetson device
+power_modes:
+	@echo "Available power modes:"
+	sudo nvpmodel -q --verbose
+	@echo ""
+	@echo "Available fan modes:"
+	sudo jetson_clocks --show-fan
+	@echo ""
+	@echo "Use 'sudo nvpmodel -m MODE' to set the power mode, and 'sudo jetson_clocks --fan FAN_MODE' to set the fan mode."
+
+#Combine results from all devices
 combine:
 	@echo "Combining results into $(OUTPUT_FILE)..."
 	python3 scripts/combine_results.py --results-dir $(RESULTS_DIR) --output-file $(OUTPUT_FILE)
 
-# Updated clean target to remove the newly generated files
+#Remove generated files
 clean:
 	sudo rm -rf powerlogs energy_results.csv model_benchmarks.csv __pycache__ bench_with_energy.csv $(OUTPUT_FILE)
+
+
+# --- Experiments ---
+
+nvpmodel_experiment:
+	@echo "Running nvpmodel experiment..."
+	sudo python3 experiments/jetson_nvpmodel.py
+
+frequency_experiment:
+	@echo "Running frequency experiment..."
+	sudo python3 experiments/jetson_frequency.py --results-dir $(RESULTS_DIR)
 
